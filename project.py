@@ -37,7 +37,7 @@ def showLogin():
     # return "The current session state is %s" % login_session['state']
     return render_template('login.html', STATE=state)
 
-#__________________________Facebook connect
+#______________________________________________________________________________________________Facebook connect
 
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
@@ -48,6 +48,7 @@ def fbconnect():
         return response
     access_token = request.data
     print "access token received %s " % access_token
+
     #Exchange short lived token for long lived one. app_secret is sent to facebook.
     app_id = json.loads(open('fb_client_secrets.json', 'r').read())['web']['app_id']
     app_secret = json.loads(open('fb_client_secrets.json', 'r').read())['web']['app_secret']
@@ -115,7 +116,7 @@ def fbdisconnect():
     return "you have been logged out"
 
 
-#__________________________ Google connect
+#______________________________________________________________________________________________ Google connect
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
@@ -226,7 +227,26 @@ def gdisconnect():
         return response
 
 
-
+@app.route('/disconnect')
+def disconnect():
+    if 'provider' in login_session:
+        if login_session['provider'] == 'google':
+            gdisconnect()
+            del login_session['gplus_id']
+            del login_session['access_token']
+        if login_session['provider'] == 'facebook':
+            fbdisconnect()
+            del login_session['facebook_id']
+        del login_session['username']
+        del login_session['email']
+        del login_session['picture']
+        del login_session['user_id']
+        del login_session['provider']
+        flash("You have successfully been logged out.")
+        return redirect(url_for('showRestaurants'))
+    else:
+        flash("You were not logged in")
+        return redirect(url_for('showRestaurants'))
 
 
 # User ID Information
@@ -273,11 +293,12 @@ def restaurantsJSON():
 @app.route('/')
 @app.route('/restaurant/')
 def showRestaurants():
-  restaurants = session.query(Restaurant).order_by(asc(Restaurant.name))
-  if 'username' not in login_session:
-      return render_template('publicrestaurants.html', resturants = restaurants)
-  else:
-      return render_template('restaurants.html', restaurants = restaurants)
+    restaurants = session.query(Restaurant).order_by(asc(Restaurant.name))
+    if 'username' not in login_session:
+        return render_template('publicrestaurants.html', restaurants = restaurants)
+    else:
+        return render_template('restaurants.html', restaurants = restaurants)
+
 
 #Create a new restaurant
 @app.route('/restaurant/new/', methods=['GET','POST'])
